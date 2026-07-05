@@ -1307,14 +1307,13 @@ elif page == "📈 Dashboard":
         business_df = segments.copy()
 
     else:
-
         customer_query = f"""
         SELECT DISTINCT CustomerID
         FROM retail_sales
         WHERE Country = '{selected_country}';
         """
 
-       customer_ids = (
+        customer_ids = (
             retail_df[retail_df["Country"] == selected_country][["CustomerID"]]
             .drop_duplicates()
             .sort_values("CustomerID")
