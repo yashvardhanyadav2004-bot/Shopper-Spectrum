@@ -1595,336 +1595,107 @@ elif page == "📈 Dashboard":
 
 elif page == "🗄 SQL Analytics":
 
-    st.markdown("""
-    <h1 style="
-    font-size:48px;
-    font-weight:800;
-    color:white;
-    margin-bottom:0px;">
-    🗄 SQL Analytics Dashboard
-    </h1>
-
-    <h3 style="
-    color:#60A5FA;
-    margin-top:-5px;">
-    Interactive Business Insights from MySQL Database
-    </h3>
-
-    <p style="
-    font-size:18px;
-    color:#B8C1CC;
-    line-height:1.8;">
-    Analyse retail sales using optimized SQL queries to uncover revenue trends,
-    customer behaviour and business opportunities.
-    </p>
-    """, unsafe_allow_html=True)
-
+    st.title("🗄 SQL Analytics Dashboard")
     st.write("---")
 
-    st.subheader("❓ Query 1: Which are the Top 10 Products generating the highest revenue?")
+    # ==========================
+    # Query 1
+    # ==========================
+    st.subheader("❓ Query 1: Top Products by Revenue")
 
-    if selected_country == "All":
+    df = retail_df.copy()
 
-     query = f"""
-        SELECT
-        Description AS Product,
-        ROUND(SUM(Quantity*UnitPrice),2) AS Revenue
-        FROM retail_sales
-        GROUP BY Description
-        ORDER BY Revenue DESC
-        LIMIT {top_n};
-        """
+    if selected_country != "All":
+        df = df[df["Country"] == selected_country]
 
-    else:
-
-     query = f"""
-     SELECT
-        Description AS Product,
-        ROUND(SUM(Quantity*UnitPrice),2) AS Revenue
-        FROM retail_sales
-        WHERE Country='{selected_country}'
-        GROUP BY Description
-        ORDER BY Revenue DESC
-        LIMIT {top_n};
-        """
-    
-     top_products = (
-        retail_df.assign(
-            Revenue=retail_df["Quantity"] * retail_df["UnitPrice"]
-        )
+    top_products = (
+        df.assign(Revenue=df["Quantity"] * df["UnitPrice"])
         .groupby("Description", as_index=False)["Revenue"]
         .sum()
         .sort_values("Revenue", ascending=False)
         .head(top_n)
     )
 
-    top_products.rename(
-        columns={"Description": "Product"},
-        inplace=True
-    )
-st.dataframe(top_products, use_container_width=True)
+    top_products.rename(columns={"Description": "Product"}, inplace=True)
 
-st.bar_chart(
-    data=top_products,
-    x="Product",
-    y="Revenue"
-)
-    st.info("""
-    ### 📊 Business Insight
+    st.dataframe(top_products, use_container_width=True)
+    st.bar_chart(top_products.set_index("Product"))
 
-    The top-selling products generate a significant portion of overall revenue.
-    These products represent the company's strongest-performing inventory and
-    customer demand.
-
-    """)
-
-    st.success("""
-    ### 💡 Business Recommendation
-
-    Focus inventory replenishment for these products to avoid stock-outs.
-
-    Bundle top-selling products with slow-moving items to increase cross-selling.
-
-    Use these products in promotional campaigns and homepage recommendations.
-
-    Regularly monitor pricing strategies to maximize profitability.
-    """)
     st.write("---")
 
-
-    st.subheader("❓ Query 2: Which countries generated the highest revenue?")
-
-    query = f"""
-    SELECT
-        Country,
-        ROUND(SUM(Quantity * UnitPrice),2) AS Revenue
-    FROM retail_sales
-    GROUP BY Country
-    ORDER BY Revenue DESC
-    LIMIT {top_n};
-    """
+    # ==========================
+    # Query 2
+    # ==========================
+    st.subheader("❓ Query 2: Revenue by Country")
 
     country_sales = (
         retail_df.assign(Revenue=retail_df["Quantity"] * retail_df["UnitPrice"])
         .groupby("Country", as_index=False)["Revenue"]
         .sum()
         .sort_values("Revenue", ascending=False)
+        .head(top_n)
     )
 
-    st.dataframe(
-        country_sales,
-        use_container_width=True
-    )
+    st.dataframe(country_sales, use_container_width=True)
+    st.bar_chart(country_sales.set_index("Country"))
 
-    st.bar_chart(
-        data=country_sales,
-        x="Country",
-        y="Revenue"
-    )
-    st.info("""
-    ### 📊 Business Insight
-    The dashboard highlights the countries contributing the highest revenue,
-    allowing businesses to identify their strongest markets and prioritize sales efforts.
-    """)
-
-    st.success("""
-    ### 💡 Business Recommendation
-    Focus marketing campaigns and inventory planning on the top-performing countries.
-    For low-performing regions, introduce promotional offers and localized marketing
-    strategies to improve customer engagement and revenue.
-    """)
     st.write("---")
 
-    st.subheader("❓ Query 3: Which month generated the highest sales revenue?")
+    # ==========================
+    # Query 3
+    # ==========================
+    st.subheader("❓ Query 3: Monthly Revenue")
 
-    if selected_country == "All":
-
-        query = """
-        SELECT
-            MONTHNAME(InvoiceDate) AS Month,
-            ROUND(SUM(Quantity*UnitPrice),2) AS Revenue
-        FROM retail_sales
-        GROUP BY MONTH(InvoiceDate), MONTHNAME(InvoiceDate)
-        ORDER BY MONTH(InvoiceDate);
-        """
-
-    else:
-
-        query = f"""
-        SELECT
-            MONTHNAME(InvoiceDate) AS Month,
-            ROUND(SUM(Quantity*UnitPrice),2) AS Revenue
-        FROM retail_sales
-        WHERE Country='{selected_country}'
-        GROUP BY MONTH(InvoiceDate), MONTHNAME(InvoiceDate)
-        ORDER BY MONTH(InvoiceDate);
-        """
-
-    retail_df["Month"] = retail_df["InvoiceDate"].dt.to_period("M").astype(str)
+    monthly_df = df.copy()
+    monthly_df["Month"] = monthly_df["InvoiceDate"].dt.to_period("M").astype(str)
 
     monthly_sales = (
-        retail_df.assign(Revenue=retail_df["Quantity"] * retail_df["UnitPrice"])
+        monthly_df.assign(
+            Revenue=monthly_df["Quantity"] * monthly_df["UnitPrice"]
+        )
         .groupby("Month", as_index=False)["Revenue"]
         .sum()
     )
 
-    st.dataframe(
-        monthly_sales,
-        use_container_width=True
-    )
+    st.dataframe(monthly_sales, use_container_width=True)
+    st.line_chart(monthly_sales.set_index("Month"))
 
-    st.line_chart(
-        data=monthly_sales,
-        x="Month",
-        y="Revenue"
-    )
-    st.info("""
-    ### 📊 Business Insight
-
-    Monthly sales trends reveal seasonal buying patterns and peak revenue periods.
-
-    Identifying high-performing months helps businesses forecast demand more
-    accurately and prepare inventory accordingly.
-    """)
-
-    st.success("""
-    ### 💡 Business Recommendation
-
-    Increase inventory before peak sales months.
-
-    Launch marketing campaigns ahead of seasonal demand.
-
-    Offer discounts during low-performing months to improve sales consistency.
-
-    Use monthly trends for production and workforce planning.
-    """)
     st.write("---")
 
-    st.subheader("❓ Query 4: Which customers placed the highest number of orders?")
-
-    if selected_country == "All":
-
-        query = f"""
-        SELECT
-            CustomerID,
-            COUNT(DISTINCT InvoiceNo) AS Orders
-        FROM retail_sales
-        GROUP BY CustomerID
-        ORDER BY Orders DESC
-        LIMIT {top_n};
-        """
-
-    else:
-
-        query = f"""
-        SELECT
-            CustomerID,
-            COUNT(DISTINCT InvoiceNo) AS Orders
-        FROM retail_sales
-        WHERE Country='{selected_country}'
-        GROUP BY CustomerID
-        ORDER BY Orders DESC
-        LIMIT {top_n};
-        """
+    # ==========================
+    # Query 4
+    # ==========================
+    st.subheader("❓ Query 4: Customers with Highest Orders")
 
     top_orders = (
-        retail_df.groupby("CustomerID")["InvoiceNo"]
+        df.groupby("CustomerID")["InvoiceNo"]
         .nunique()
         .reset_index(name="Orders")
         .sort_values("Orders", ascending=False)
+        .head(top_n)
     )
 
-    st.dataframe(
-        top_orders,
-        use_container_width=True
-    )
+    st.dataframe(top_orders, use_container_width=True)
+    st.bar_chart(top_orders.set_index("CustomerID"))
 
-    st.bar_chart(
-        data=top_orders,
-        x="CustomerID",
-        y="Orders"
-    )
-    st.info("""
-    ### 📊 Business Insight
-
-    A small group of customers contributes a large number of total orders,
-    indicating strong customer loyalty and repeat purchasing behaviour.
-    """)
-
-    st.success("""
-    ### 💡 Business Recommendation
-
-    Reward frequent customers through loyalty programs.
-
-    Provide exclusive offers and personalized recommendations.
-
-    Introduce VIP memberships for top customers.
-
-    Use email marketing to retain repeat buyers.
-    """)
     st.write("---")
 
-    st.subheader("❓ Query 5: What is the Average Order Value (AOV) for each country?")
+    # ==========================
+    # Query 5
+    # ==========================
+    st.subheader("❓ Query 5: Average Order Value by Country")
 
-    if selected_country == "All":
-
-        query = """
-        SELECT
-            Country,
-            ROUND(AVG(Quantity*UnitPrice),2) AS Average_Order_Value
-        FROM retail_sales
-        GROUP BY Country
-        ORDER BY Average_Order_Value DESC;
-        """
-
-    else:
-
-        query = f"""
-        SELECT
-            Country,
-            ROUND(AVG(Quantity*UnitPrice),2) AS Average_Order_Value
-        FROM retail_sales
-        WHERE Country='{selected_country}'
-        GROUP BY Country
-        ORDER BY Average_Order_Value DESC;
-        """
-
-        aov = (
-        retail_df.assign(OrderValue=retail_df["Quantity"] * retail_df["UnitPrice"])
+    aov = (
+        retail_df.assign(
+            OrderValue=retail_df["Quantity"] * retail_df["UnitPrice"]
+        )
         .groupby("Country", as_index=False)["OrderValue"]
         .mean()
-        )
-
-    st.dataframe(
-        aov,
-        use_container_width=True
+        .sort_values("OrderValue", ascending=False)
     )
 
-    st.bar_chart(
-        data=aov,
-        x="Country",
-        y="Average_Order_Value"
-    )
-    st.info("""
-    ### 📊 Business Insight
-
-    Average Order Value (AOV) highlights the purchasing power of customers across
-    different countries.
-
-    Higher AOV indicates stronger customer spending behaviour.
-    """)
-
-    st.success("""
-    ### 💡 Business Recommendation
-
-    Increase AOV using product bundles and upselling strategies.
-
-    Offer free shipping above a spending threshold.
-
-    Introduce premium product recommendations for high-value markets.
-
-    Design country-specific pricing and promotional strategies.
-    """)
+    st.dataframe(aov, use_container_width=True)
+    st.bar_chart(aov.set_index("Country"))
     # ==========================================
 # PRODUCT RECOMMENDATION
 # ==========================================
