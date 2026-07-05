@@ -8,11 +8,10 @@ import pandas as pd
 import joblib
 import matplotlib.pyplot as plt
 import seaborn as sns
-import mysql.connector
 import plotly.express as px
 import gdown
 import os
-
+import streamlit as st
 # -------------------------------
 # Page Configuration
 # -------------------------------
@@ -165,22 +164,6 @@ st.sidebar.markdown(
 # ==========================================
 # MYSQL CONNECTION
 # ==========================================
-
-conn = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="Yash1693051043",
-    database="retail_db"
-)
-cursor = conn.cursor()
-
-cursor.execute("SELECT COUNT(*) FROM retail_sales")
-
-total_records = cursor.fetchone()[0]
-
-print("Connected Successfully")
-print("Total Records :", total_records)
-
 # -------------------------------
 # Load Files
 # -------------------------------
@@ -208,6 +191,7 @@ for filename, file_id in FILES.items():
         )
 
 segments = pd.read_csv("customer_segments.csv")
+retail_df = pd.read_csv("clean_online_retail.csv")
 
 rfm = pd.read_csv("customer_segments.csv")
 
@@ -262,7 +246,9 @@ FROM retail_sales
 ORDER BY Country;
 """
 
-country_df = pd.read_sql(country_query, conn)
+country_df = pd.DataFrame({
+    "Country": sorted(retail_df["Country"].dropna().unique())
+})
 
 country_list = ["All"] + country_df["Country"].tolist()
 
@@ -1328,7 +1314,11 @@ elif page == "📈 Dashboard":
         WHERE Country = '{selected_country}';
         """
 
-        customer_ids = pd.read_sql(customer_query, conn)
+       customer_ids = (
+            retail_df[retail_df["Country"] == selected_country][["CustomerID"]]
+            .drop_duplicates()
+            .sort_values("CustomerID")
+        )
 
         business_df = segments[
             segments["CustomerID"].isin(customer_ids["CustomerID"])
@@ -1659,7 +1649,13 @@ elif page == "🗄 SQL Analytics":
         LIMIT {top_n};
         """
 
-    top_products = pd.read_sql(query, conn)
+    top_products = (
+        retail_df.assign(Revenue=retail_df["Quantity"] * retail_df["UnitPrice"])
+        .groupby("Description", as_index=False)["Revenue"]
+        .sum()
+        .sort_values("Revenue", ascending=False)
+        .head(10)
+    )
 
     st.dataframe(
         top_products,
@@ -1706,7 +1702,12 @@ elif page == "🗄 SQL Analytics":
     LIMIT {top_n};
     """
 
-    country_sales = pd.read_sql(query, conn)
+    country_sales = (
+        retail_df.assign(Revenue=retail_df["Quantity"] * retail_df["UnitPrice"])
+        .groupby("Country", as_index=False)["Revenue"]
+        .sum()
+        .sort_values("Revenue", ascending=False)
+    )
 
     st.dataframe(
         country_sales,
@@ -1757,7 +1758,13 @@ elif page == "🗄 SQL Analytics":
         ORDER BY MONTH(InvoiceDate);
         """
 
-    monthly_sales = pd.read_sql(query, conn)
+    retail_df["Month"] = retail_df["InvoiceDate"].dt.to_period("M").astype(str)
+
+    monthly_sales = (
+        retail_df.assign(Revenue=retail_df["Quantity"] * retail_df["UnitPrice"])
+        .groupby("Month", as_index=False)["Revenue"]
+        .sum()
+    )
 
     st.dataframe(
         monthly_sales,
@@ -1818,7 +1825,12 @@ elif page == "🗄 SQL Analytics":
         LIMIT {top_n};
         """
 
-    top_orders = pd.read_sql(query, conn)
+    top_orders = (
+        retail_df.groupby("CustomerID")["InvoiceNo"]
+        .nunique()
+        .reset_index(name="Orders")
+        .sort_values("Orders", ascending=False)
+    )
 
     st.dataframe(
         top_orders,
@@ -1875,7 +1887,11 @@ elif page == "🗄 SQL Analytics":
         ORDER BY Average_Order_Value DESC;
         """
 
-    aov = pd.read_sql(query, conn)
+        aov = (
+        retail_df.assign(OrderValue=retail_df["Quantity"] * retail_df["UnitPrice"])
+        .groupby("Country", as_index=False)["OrderValue"]
+        .mean()
+        )
 
     st.dataframe(
         aov,
