@@ -1648,7 +1648,7 @@ elif page == "🗄 SQL Analytics":
         LIMIT {top_n};
         """
     
-      top_products = (
+     top_products = (
         retail_df.assign(
             Revenue=retail_df["Quantity"] * retail_df["UnitPrice"]
         )
@@ -1656,13 +1656,12 @@ elif page == "🗄 SQL Analytics":
         .sum()
         .sort_values("Revenue", ascending=False)
         .head(top_n)
-        )
-    
-      top_products.rename(
+    )
+
+    top_products.rename(
         columns={"Description": "Product"},
         inplace=True
-        )
-
+    )
 st.dataframe(top_products, use_container_width=True)
 
 st.bar_chart(
