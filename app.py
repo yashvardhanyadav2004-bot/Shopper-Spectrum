@@ -192,6 +192,10 @@ for filename, file_id in FILES.items():
 
 segments = pd.read_csv("customer_segments.csv")
 retail_df = pd.read_csv("clean_online_retail.csv")
+retail_df["InvoiceDate"] = pd.to_datetime(
+    retail_df["InvoiceDate"],
+    errors="coerce"
+)
 
 rfm = pd.read_csv("customer_segments.csv")
 
