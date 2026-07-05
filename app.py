@@ -1647,25 +1647,29 @@ elif page == "🗄 SQL Analytics":
         ORDER BY Revenue DESC
         LIMIT {top_n};
         """
-
-    top_products = (
-        retail_df.assign(Revenue=retail_df["Quantity"] * retail_df["UnitPrice"])
+    
+      top_products = (
+        retail_df.assign(
+            Revenue=retail_df["Quantity"] * retail_df["UnitPrice"]
+        )
         .groupby("Description", as_index=False)["Revenue"]
         .sum()
         .sort_values("Revenue", ascending=False)
-        .head(10)
-    )
+        .head(top_n)
+        )
+    
+      top_products.rename(
+        columns={"Description": "Product"},
+        inplace=True
+        )
 
-    st.dataframe(
-        top_products,
-        use_container_width=True
-    )
+st.dataframe(top_products, use_container_width=True)
 
-    st.bar_chart(
-        data=top_products,
-        x="Product",
-        y="Revenue"
-    )
+st.bar_chart(
+    data=top_products,
+    x="Product",
+    y="Revenue"
+)
     st.info("""
     ### 📊 Business Insight
 
